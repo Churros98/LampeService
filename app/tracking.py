@@ -21,17 +21,17 @@ class Tracking():
 
     def debug_frame(self, frame: bytes):
         if self.debug:
-            h, w, _c = frame.shape
-            cv2.ellipse(frame, (w//2, h//2), (round(self.distance * (w/2)), round(self.distance * (h/2))), 0, 0, 360, (255, 0, 255), 2)
-            cv2.circle(frame, (w//2, h//2), 1, (0, 0, 200), -1)
+            h, w, _c = frame.shape # type: ignore
+            cv2.ellipse(frame, (w//2, h//2), (round(self.distance * (w/2)), round(self.distance * (h/2))), 0, 0, 360, (255, 0, 255), 2) # type: ignore
+            cv2.circle(frame, (w//2, h//2), 1, (0, 0, 200), -1) # type: ignore
 
             ''' Show the debug frame '''
-            cv2.imshow("Tracking", frame)
+            cv2.imshow("Tracking", frame) # type: ignore
             cv2.waitKey(1)
 
     def normal_tracking(self, frame: bytes, normal: Normalized):
         ''' Track a normal point on the frame '''
-        h, w, _c = frame.shape
+        h, w, _c = frame.shape # type: ignore
         distance_from_center = sqrt(normal.x**2 + normal.y**2)
         to_target = None
 
@@ -54,9 +54,9 @@ class Tracking():
             if self.debug:
                 print(f"Tracking point at ({normal.x}, {normal.y}) with speed {speed}")
                 if speed < self.speed:
-                    cv2.circle(frame, (xcenter, ycenter), 5, (0, 255, 0), -1)
+                    cv2.circle(frame, (xcenter, ycenter), 5, (0, 255, 0), -1) # type: ignore
                 else:
-                    cv2.circle(frame, (xcenter, ycenter), 5, (0, 0, 255), -1)
+                    cv2.circle(frame, (xcenter, ycenter), 5, (0, 0, 255), -1) # type: ignore
 
             if speed < self.speed:
                 to_target = normal
@@ -66,16 +66,18 @@ class Tracking():
         self.debug_frame(frame)
         return to_target
 
-    def lost_tracking(self, frame: bytes):
+    def lost_tracking(self, frame: bytes | None):
         self.last_normalized_point = None
         self.last_measurement = time_ns()
-        self.debug_frame(frame)
+
+        if frame:
+            self.debug_frame(frame)
 
     def face_tracking(self, frame: bytes):
         ''' Search for a face in the frame and track it '''
-        h, w, _c = frame.shape
+        h, w, _c = frame.shape # type: ignore
 
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) # type: ignore
 
         faces = self.classifier.detectMultiScale(
 		gray, scaleFactor=1.05, minNeighbors=5, minSize=(200, 200),
@@ -98,7 +100,7 @@ class Tracking():
 
     async def on_change_tracking_mode(self, mode: TrackingModeEnum) -> None:
         '''  Change the tracking mode'''
-        self.lost_tracking()
+        self.lost_tracking(None)
         self.tracking_mode = mode
 
     async def on_frame(self, frame):

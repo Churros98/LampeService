@@ -6,7 +6,7 @@ from typing import List
 from STservo_sdk import sts, PortHandler
 from app.eventbus import bus
 
-class ControllerExeption():
+class ControllerExeption(BaseException):
     pass
 
 class Controller():
@@ -21,7 +21,7 @@ class Controller():
         port = PortHandler(motor_device)
         port.setBaudRate(baudrate)
         if not port.openPort():
-            raise ControllerExeption(serial=motor_device)
+            raise ControllerExeption()
 
         self.handler = sts(port)
 
@@ -35,6 +35,7 @@ class Controller():
     def add_motor(self, name: str, sts_id: int, offset: Angle, constraint: Constraint, is_reverse = False) -> Motor:
         ''' Add a motor on the controls system'''
         self.motors[name] = Motor(self.handler, sts_id, name, constraint, offset, is_reverse)
+        return self.motors[name]
 
     def remove_motor(self, name: str):
         ''' Remove a motor on the controls system'''
@@ -118,7 +119,7 @@ class Controller():
         ''' Move to a position using motors '''
         print(f"Moving to position {position}")
         angles = inverse(position)
-        self.on_move_angles(angles)
+        await self.on_move_angles(angles)
 
     async def on_move_tracking(self, moving_norm: Normalized) -> None:
         ''' Move motors for tracking '''

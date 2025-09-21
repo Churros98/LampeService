@@ -23,13 +23,7 @@ async def start_sensors():
     asyncio.create_task(controller.update())
     asyncio.create_task(audio.update())
 
-async def stop_sensors():
-    await camera.close()
-    await light.close()
-    await controller.close()
-    await audio.close()
-
-app = FastAPI(on_startup=[start_sensors], on_shutdown=[stop_sensors])
+app = FastAPI(on_startup=[start_sensors])
 
 # Motors and positional control
 @app.get("/health")
@@ -38,7 +32,6 @@ async def health():
 
 @app.get("/lock")
 async def lock_motors():
-    # Replace with actual bus logic if available
     bus.emit("controller_torque", True)
     return None
 
@@ -49,7 +42,7 @@ async def unlock_motors():
 
 @app.get("/angle/{name}")
 async def get_angle(name: str):
-    return jsonable_encoder(controller.motor(name).get_angle())
+    return jsonable_encoder(controller.motor(name).get_world_angle())
 
 @app.post("/angle/{name}")
 async def set_angle(name: str, angle: Annotated[Angle, Form()]):

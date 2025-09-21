@@ -7,6 +7,7 @@ class Light():
         self.pwm = HardwarePWM(pwm_channel=0, hz=60, chip=0)
         self.min = min
         self.max = max
+        self.bus = bus
 
         if self.bus:
             self.bus.subscribe("light_set")(self.set_light)
@@ -19,7 +20,7 @@ class Light():
     def get_light(self):
         ''' Get the light '''
         d = self.max-self.min
-        return Perc(val = min(max(((self.pwm._duty_cycle-self.min) / d) * 100, 100), 0))
+        return Perc(val = round(min(max(((self.pwm._duty_cycle-self.min) / d) * 100.0, 100.0), 0.0)))
     
     def close(self):
         ''' Close the light device '''

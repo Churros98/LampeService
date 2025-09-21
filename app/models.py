@@ -48,15 +48,15 @@ class Configuration(BaseModel):
             return Configuration(**config)
         except:
             conf = Configuration(offsets={
-                "bras_horizontal": Angle(),
-                "bras1": Angle(),
-                "bras2": Angle(),
-                "cone": Angle()
+                "bras_horizontal": Angle(deg=0),
+                "bras1": Angle(deg=0),
+                "bras2": Angle(deg=0),
+                "cone": Angle(deg=0)
             }, constraints={
-                "bras_horizontal": Constraint(),
-                "bras1": Constraint(),
-                "bras2": Constraint(),
-                "cone": Constraint()
+                "bras_horizontal": Constraint(min=-180.0, max=180.0),
+                "bras1": Constraint(min=-180.0, max=180.0),
+                "bras2": Constraint(min=-180.0, max=180.0),
+                "cone": Constraint(min=-180.0, max=180.0)
             })
 
             conf.save(path)
@@ -66,14 +66,6 @@ class Configuration(BaseModel):
     def save(self, path):
         with open(path, "w+") as file:
             yaml.dump(self.model_dump(), file)
-
-class LightActionArgs(BaseModel):
-    perc: Annotated[int, Field(ge=0, le=100)]
-
-class TrackingModeEnum(str, Enum):
-    IDLE = "idle"
-    OBJECT = "object"
-    FACE = "face"
 
 class Emote(Enum):
     IDLE = 0

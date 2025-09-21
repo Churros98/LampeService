@@ -75,4 +75,3 @@ class Audio():
         self.out_stream.stop_stream()
         self.in_stream.close()
         self.out_stream.close()
-        self.audio.close()

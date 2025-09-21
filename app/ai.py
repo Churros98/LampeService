@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from os import getenv
 from app.models import AiResponse, LightActionArgs, Perc, TrackingModeArgs
 from openwakeword.model import Model as WakeModel
+from app.eventbus import EventBus
 
 load_dotenv()
 
@@ -13,20 +14,20 @@ class Ai():
         self.bus = bus
         self.model = OpenAIChatModel(
             "@preset/the-lamp-ai",
-            provider=OpenRouterProvider(api_key=getenv('OPENROUTER_API_KEY')),
+            provider=OpenRouterProvider(api_key=getenv('OPENROUTER_API_KEY', "DUMMYKEY")),
         )
         self.agent = Agent(self.model, output_type=AiResponse)
         self.wake_model = WakeModel(wakeword_models=["hey_jarvis"])
 
-        if self.bus:
-            self.bus.subscribe("ai_request")(self.on_request)
-            self.bus.subscribe("audio_input")(self.wake_predict)
+        if bus:
+            bus.subscribe("ai_request")(self.on_request)
+            bus.subscribe("audio_input")(self.wake_predict)
 
-    async def on_request(self, request: str) -> str:
+    async def on_request(self, request: str) -> AiResponse:
         ''' Execute any request to AI '''
         print(f"Requested: {request}")
-        request = await self.agent.run(request)
-        response: AiResponse = request.output
+        result = await self.agent.run(request)
+        response = result.output
 
         # Execute all actions
         if self.bus:
@@ -36,7 +37,7 @@ class Ai():
                         perc = Perc(val=args.perc)
                         self.bus.emit("light_action", perc)
                     elif isinstance(args, TrackingModeArgs):
-                        self.bus.emit("tracking_mode", args.mode, args.subjects)
+                        self.bus.emit("tracking_mode", args.type, args.subjects)
             
             self.bus.emit("talk", response.text)
 
@@ -44,11 +45,15 @@ class Ai():
 
     async def wake_predict(self, audio: bytes) -> bool:
         ''' Detect if wake word is spoken '''
-        predictions = self.wake_model.predict(audio)
-        for _, score in predictions.prediction_buffer.items():
+        import numpy as np
+        # Assuming audio is PCM 16-bit mono, convert bytes to numpy array
+        audio_np = np.frombuffer(audio, dtype=np.int16)
+        prediction_dict, _ = self.wake_model.predict(audio_np)
+        for _, score in prediction_dict.items():
             if score > 0.8:
                 print("Wake word detected")
-                self.bus.emit("ai_wakeup")
+                if self.bus:
+                    self.bus.emit("ai_wakeup")
                 return True
 
         return False

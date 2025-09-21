@@ -9,9 +9,9 @@ class Camera():
         self.bus = bus
         if not self.capture.isOpened():
             raise IOError("Cannot open camera")
-        
+
     async def snapshot(self) -> bytes:
-        frame = await self.capture.read()
+        frame = self.capture.read()
         ret, jpeg = cv2.imencode('.jpg', frame[1])
         return jpeg.tobytes()
 
